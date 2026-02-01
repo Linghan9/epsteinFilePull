@@ -1,0 +1,15 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[packages]
+beautifulsoup4 = "*"
+requests = "*"
+urllib3 = "*"
+playwright = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
