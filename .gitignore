@@ -1,8 +1,9 @@
 # Pulled Files
-*ReleasePull*
+*ReleasePull*/
 
 # Sample html used for initial development
 Sample*.html
 sample.html
 
+# Python cache files
 *__pycache__*
