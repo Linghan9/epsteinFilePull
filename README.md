@@ -1,4 +1,5 @@
 ## Epstein File Pull
+(It's currently under development, we will be back work on it every night!!)
 This repository is designed to automate the process of pulling and downloading Epstein-related files from the U.S. Department of Justice (DOJ) website.
 ### Usage
 ---
