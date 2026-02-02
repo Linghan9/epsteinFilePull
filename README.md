@@ -26,6 +26,10 @@ To run any of the Python scripts in this repository, use:
 	pipenv run python [script name]
 For example, to run the January 2026 release pull script:
 	pipenv run python jan2026ReleasePull.py
+
+Run with verbose debug logging:
+
+	pipenv run python jan2026ReleasePull.py --verbose
 ## Epstein File Pull
 
 This repository is designed to automate the process of pulling and downloading Epstein-related files from the U.S. Department of Justice (DOJ) website.
@@ -52,3 +56,8 @@ Use this script to:
 - Download all documents from the January 2026 DOJ Disclosures Datasets 9–12
 - Organize and store the files in a structured format
 - Enable streamlined access for downstream analysis and review
+
+Notes on verification & headless mode:
+- The script uses headless Playwright to interact with DOJ pages (age gates / PDF viewers) and will attempt to automate interactions when possible.
+- HTML snapshots and logs are written to each run's output directory (e.g. `jan2026ReleasePull_YYYYmmdd_HHMMSS`) to aid debugging.
+- In some cases manual interaction is required; the script will pause and prompt you before continuing.
