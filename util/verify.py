@@ -68,8 +68,10 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
             page.goto(file_url, timeout=30000)
             page.wait_for_load_state('networkidle', timeout=30000)
 
+            # basename to use in consistent snapshot filenames
+            file_basename = os.path.basename(file_url.split('?')[0])
             ts = time.strftime("%Y%m%d_%H%M%S")
-            init_snap = os.path.join(outputDir, f'playwright_snapshot_{file_url.split('/')[-1]}_{ts}_init.html')
+            init_snap = os.path.join(outputDir, f'{ts}_playwright_snapshot_{file_basename}_init.html')
             with open(init_snap, 'w', encoding='utf-8') as sf:
                 sf.write(page.content())
             _log_debug(f"Saved initial snapshot {init_snap}", outputDir, verbose)
@@ -127,7 +129,7 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                                 el.click()
                             frame.wait_for_load_state('networkidle', timeout=10000)
                             tsc = time.strftime("%Y%m%d_%H%M%S")
-                            snap_path = os.path.join(outputDir, f'playwright_bot_click_{tsc}.html')
+                            snap_path = os.path.join(outputDir, f'{tsc}_playwright_snapshot_{file_basename}_bot_click.html')
                             with open(snap_path, 'w', encoding='utf-8') as bf:
                                 bf.write(frame.content())
                             _log_debug(f"Clicked verification control; saved snapshot {snap_path}", outputDir, verbose)
@@ -178,7 +180,7 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                     # re-check for pdf after clicking
                     page.wait_for_load_state('networkidle', timeout=10000)
                     ts_bot = time.strftime("%Y%m%d_%H%M%S")
-                    bot_snap = os.path.join(outputDir, f'playwright_bot_after_click_{ts_bot}.html')
+                    bot_snap = os.path.join(outputDir, f'{ts_bot}_playwright_snapshot_{file_basename}_bot_after_click.html')
                     with open(bot_snap, 'w', encoding='utf-8') as bf:
                         bf.write(page.content())
                     _log_debug(f"Saved bot-after-click snapshot {bot_snap}", outputDir, verbose)
@@ -258,7 +260,7 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                 if age_clicked:
                     page.wait_for_load_state('networkidle', timeout=10000)
                     ts_age = time.strftime("%Y%m%d_%H%M%S")
-                    age_snap = os.path.join(outputDir, f'playwright_age_after_click_{ts_age}.html')
+                    age_snap = os.path.join(outputDir, f'{ts_age}_playwright_snapshot_{file_basename}_age_after_click.html')
                     with open(age_snap, 'w', encoding='utf-8') as af:
                         af.write(page.content())
                     _log_debug(f'Saved age-after-click snapshot {age_snap}', outputDir, verbose)
@@ -287,7 +289,7 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                             clicked = True
                             page.wait_for_load_state('networkidle', timeout=10000)
                             ts2 = time.strftime("%Y%m%d_%H%M%S")
-                            with open(os.path.join(outputDir, f'playwright_after_click_{ts2}.html'), 'w', encoding='utf-8') as af:
+                            with open(os.path.join(outputDir, f'{ts2}_playwright_snapshot_{file_basename}_after_click.html'), 'w', encoding='utf-8') as af:
                                 af.write(page.content())
                         except Exception:
                             pass
@@ -300,7 +302,7 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                             clicked = True
                             page.wait_for_load_state('networkidle', timeout=10000)
                             ts2 = time.strftime("%Y%m%d_%H%M%S")
-                            with open(os.path.join(outputDir, f'playwright_after_click_{ts2}.html'), 'w', encoding='utf-8') as af:
+                            with open(os.path.join(outputDir, f'{ts2}_playwright_snapshot_{file_basename}_after_click.html'), 'w', encoding='utf-8') as af:
                                 af.write(page.content())
                             break
                         except Exception:
@@ -309,7 +311,7 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                 pdf_url = find_pdf_url(page)
 
             tsf = time.strftime("%Y%m%d_%H%M%S")
-            final_snap = os.path.join(outputDir, f'playwright_snapshot_{file_url.split('/')[-1]}_{tsf}_final.html')
+            final_snap = os.path.join(outputDir, f'{tsf}_playwright_snapshot_{file_basename}_final.html')
             with open(final_snap, 'w', encoding='utf-8') as sf:
                 sf.write(page.content())
             _log_debug(f"Saved final snapshot {final_snap}", outputDir, verbose)
