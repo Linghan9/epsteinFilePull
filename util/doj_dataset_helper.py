@@ -101,7 +101,8 @@ def pull_doj_dataset_headless(dataset_paths: List[str], base_url: str, outputDir
                             continue
                         file_url = requests.compat.urljoin(page.url, href)
                         _log(f"Attempting file {file_url}", outputDir, verbose)
-                        res = pull_doj_file_headless(file_url, outputDir, timeout=timeout, verbose=verbose, non_interactive=non_interactive)
+                        # Reuse the dataset-level context so session cookies and verification persist across file downloads
+                        res = pull_doj_file_headless(file_url, outputDir, timeout=timeout, verbose=verbose, non_interactive=non_interactive, context=context)
                         if res:
                             content = res.get('content')
                             fname = res.get('filename')

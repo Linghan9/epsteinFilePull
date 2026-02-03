@@ -12,10 +12,12 @@ def main():
 	non_interactive = args.non_interactive
 	# Create run directory and an 'output' subdirectory for files and snapshots
 	timestamp = time.strftime("%Y%m%d_%H%M%S")
-	run_dir = f"jan2026ReleasePull_{timestamp}"
+	# Put all runs under a top-level ./output directory
+	base_output = os.path.join(os.getcwd(), 'output')
+	os.makedirs(base_output, exist_ok=True)
+	run_dir = os.path.join(base_output, f"jan2026ReleasePull_{timestamp}")
 	os.makedirs(run_dir, exist_ok=True)
-	output_dir = os.path.join(run_dir, 'output')
-	os.makedirs(output_dir, exist_ok=True)
+	output_dir = run_dir
 
 	# Datasets to process (datasets 8-12)
 	datasets = [
