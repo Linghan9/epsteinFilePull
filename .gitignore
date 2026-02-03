@@ -7,3 +7,6 @@ sample.html
 
 # Python cache files
 *__pycache__*
+
+# AI Prompts
+ai_prompt*
