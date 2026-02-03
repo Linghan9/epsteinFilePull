@@ -50,6 +50,39 @@ def pull_doj_file_headless(file_url: str, outputDir: str, timeout: int = 30, ver
                     headers = {}
                 _log_debug(f"Got response (attempt {attempt}) status: {status}", outputDir, verbose)
                 _log_debug(f"Response headers (attempt {attempt}): {headers}", outputDir, verbose)
+                # If the response set cookies, try to propagate them into the browser context
+                try:
+                    cookie_header = headers.get('set-cookie') if headers else None
+                    if cookie_header:
+                        try:
+                            from http.cookies import SimpleCookie
+                            import urllib.parse
+                            sc = SimpleCookie()
+                            sc.load(cookie_header)
+                            cookies_to_add = []
+                            domain = urllib.parse.urlparse(url).hostname
+                            for cname, morsel in sc.items():
+                                cpath = morsel.get('path') or '/'
+                                cdomain = morsel.get('domain') or f'.{domain}'
+                                cookies_to_add.append({
+                                    'name': cname,
+                                    'value': morsel.value,
+                                    'domain': cdomain,
+                                    'path': cpath,
+                                    'httpOnly': True if morsel.get('httponly') else False,
+                                    'secure': True if morsel.get('secure') else False,
+                                })
+                            if cookies_to_add:
+                                try:
+                                    page.context.add_cookies(cookies_to_add)
+                                    _log_debug(f"Added cookies to context from response: {[c['name'] for c in cookies_to_add]}", outputDir, verbose)
+                                except Exception as e:
+                                    _log_debug(f"Failed to add cookies to context: {e}", outputDir, verbose)
+                        except Exception as e:
+                            _log_debug(f"Failed parsing set-cookie header: {e}", outputDir, verbose)
+                except Exception:
+                    pass
+
                 # If not 200, log and retry
                 if status != 200:
                     _log_debug(f"Non-200 response for {url}: {status}", outputDir, verbose)
