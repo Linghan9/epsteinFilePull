@@ -21,7 +21,7 @@ def main():
 
 	# Datasets to process (datasets 8-12)
 	datasets = [
-		"data-set-8-files",
+		# "data-set-8-files",
 		"data-set-9-files",
 		"data-set-10-files",
 		"data-set-11-files",
@@ -33,6 +33,6 @@ def main():
 	print(f"Run directory: {run_dir}; outputs in: {output_dir}")
 
 	# Use dataset-level helper to crawl pages and download files 
-	doj_dataset_helper.pull_doj_dataset_headless(datasets, base_url, output_dir, timeout=30, verbose=verbose, non_interactive=non_interactive)
+	doj_dataset_helper.pull_doj_dataset_headless(datasets, base_url, output_dir, per_page_limit=None, timeout=30, verbose=verbose, non_interactive=non_interactive, max_pages=None)
 
 main()
