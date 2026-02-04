@@ -4,7 +4,7 @@ import requests
 from typing import List
 
 from .doj_file_helper import pull_doj_file_headless
-from .headless_interaction_util import save_snapshot
+from .headless_interaction_util import print_request_details, save_snapshot
 
 
 def _log(msg: str, outputDir: str, verbose: bool = False):
@@ -41,9 +41,10 @@ def pull_doj_dataset_headless(dataset_paths: List[str], base_url: str, outputDir
         ds_url = requests.compat.urljoin(base_url + '/', path)
         _log(f"Starting dataset: {ds_url}", outputDir, verbose)
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=False)
             context = browser.new_context()
             page = context.new_page()
+            page.on("request", print_request_details)
 
             page.goto(ds_url, timeout=30000)
             page.wait_for_load_state('networkidle', timeout=30000)
@@ -182,8 +183,8 @@ def pull_doj_dataset_headless(dataset_paths: List[str], base_url: str, outputDir
                         # Detect Access Denied / WAF blocks
                         page_content = (page.content() or '').lower()
                         blocked = False
-                        if 'access denied' in page_content or 'errors.edgesuite.net' in page_content:
-                            blocked = True
+                        # if 'access denied' in page_content or 'errors.edgesuite.net' in page_content:
+                        #     blocked = True
                         if resp and getattr(resp, 'status', None) in (401, 403, 451, 503):
                             blocked = True
 

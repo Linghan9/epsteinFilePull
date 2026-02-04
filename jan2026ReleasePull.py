@@ -32,7 +32,7 @@ def main():
 
 	print(f"Run directory: {run_dir}; outputs in: {output_dir}")
 
-	# Use dataset-level helper to crawl pages and download files (5 per page, up to 5 pages for testing)
-	doj_dataset_helper.pull_doj_dataset_headless(datasets, base_url, output_dir, per_page_limit=1, timeout=30, verbose=verbose, non_interactive=non_interactive, max_pages=5)
+	# Use dataset-level helper to crawl pages and download files 
+	doj_dataset_helper.pull_doj_dataset_headless(datasets, base_url, output_dir, per_page_limit=None, timeout=30, verbose=verbose, non_interactive=non_interactive, max_pages=None)
 
 main()

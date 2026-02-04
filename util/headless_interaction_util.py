@@ -2,6 +2,17 @@ import time
 import os
 import requests
 
+def print_request_details(request):
+    """Callback function to process only the main navigation request."""
+    if request.is_navigation_request():
+        print(f"✅ Main Navigation Request URL: {request.url}")
+        print("--- Headers ---")
+        # Use all_headers() for a complete list including cookies
+        headers = request.all_headers()
+        for key, value in headers.items():
+            print(f"{key}: {value}")
+        print("---------------")
+
 
 def _log_debug(msg: str, outputDir: str, verbose: bool = False):
     if not verbose:
