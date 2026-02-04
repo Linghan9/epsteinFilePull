@@ -20,11 +20,11 @@ def _log(msg: str, outputDir: str, verbose: bool = False):
         pass
 
 
-def pull_doj_dataset_headless(dataset_paths: List[str], base_url: str, outputDir: str, per_page_limit: int = 5, timeout: int = 30, verbose: bool = False, non_interactive: bool = False, max_pages: int = None):
+def pull_doj_dataset_headless(dataset_paths: List[str], base_url: str, outputDir: str, per_page_limit: int | None = None, timeout: int = 30, verbose: bool = False, non_interactive: bool = False, max_pages: int | None = None):
     """Navigate DOJ dataset pages and download files.
 
     For each dataset path, navigate to {base_url}/{path}, and on each page download up to
-    `per_page_limit` files from the item-list. If a "Next page" link exists, click it and repeat.
+    `per_page_limit` files from the item-list (or all items if no `per_page_limit` ). If a "Next page" link exists, click it and repeat.
 
     - `max_pages` (optional): stop after processing this many pages for the dataset. Use for short test runs.
 
@@ -99,7 +99,7 @@ def pull_doj_dataset_headless(dataset_paths: List[str], base_url: str, outputDir
                 _log(f"Found {len(anchors)} items on page", outputDir, verbose)
                 count = 0
                 for a in anchors:
-                    if count >= per_page_limit:
+                    if per_page_limit is not None and count >= per_page_limit:
                         break
                     try:
                         href = a.get_attribute('href') or ''
