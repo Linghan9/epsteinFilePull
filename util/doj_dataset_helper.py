@@ -6,7 +6,7 @@ from playwright.sync_api import Page
 import requests
 from typing import List
 
-from common_util.headed_interaction_util import _append_dead_letter, _log_debug, ensure_page_verified, print_request_details, save_snapshot
+from common_util.headed_interaction_util import _append_dead_letter, _log_debug, click_verification_controls, ensure_page_verified, print_request_details, save_snapshot
 from .doj_dataset_next_page import navigate_to_next_page
 from .doj_file_helper import pull_doj_file
 
@@ -105,17 +105,24 @@ def pull_doj_dataset_headed(playwright: Page,
                         pass
 
                 # After iterating all items, attempt to navigate to next page link
-                next_page_found = navigate_to_next_page(
-                    page=page,
-                    page_number=page_number,
-                    file_basename=file_basename,
-                    outputDir=output_dir,
-                    verbose=verbose,
+                attempted_next_page_verification_controls = False
+                next_page_found = False
+                while not attempted_next_page_verification_controls and not next_page_found:
+                    next_page_found = navigate_to_next_page(
+                        page=page,
+                        page_number=page_number,
+                        file_basename=file_basename,
+                        outputDir=output_dir,
+                        verbose=verbose,
                     timeout_ms=timeout_ms)
                 
-                if not next_page_found:
-                    _log_debug('No next page found, moving to next dataset', output_dir, verbose)
-                    break
+                    if not next_page_found and not attempted_next_page_verification_controls:
+                        _log_debug('No next page found, attempting verification controls before concluding pagination.', output_dir, verbose)
+                        click_verification_controls(page, output_dir, file_basename, verbose)
+                        attempted_next_page_verification_controls = True
+                    elif not next_page_found and attempted_next_page_verification_controls:
+                        _log_debug('No next page found after attempting verification controls, concluding pagination and moving to next dataset.', output_dir, verbose)
+                        break
 
         except Exception as e:
             _log_debug(f"Error processing dataset {ds_url}. Moving to next dataset.", output_dir, exception=e, verbose=verbose)
