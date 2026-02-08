@@ -31,32 +31,36 @@ def pull_doj_file(page: Page,
         verbose: bool = False, 
         retries: int = 3):
 
-    resp = retry_with_backoff(
-     func=lambda: 
-        _try_get_request(page, file_url, outputDir, verbose, timeout_ms=timeout_ms), 
-     recovery_fun=lambda e: 
-        handle_file_fetch_failure(page, file_url, e, outputDir, verbose),
-     outputDir=outputDir, 
-     verbose=verbose,
-     max_retries=retries)
+    # Retry loop with verification controls if needed
+    verification_controls_attempted = False # Track if we've tried verification controls yet
+    while (True):
+        resp = retry_with_backoff(
+            func=lambda: 
+                _try_get_request(page, file_url, outputDir, verbose, timeout_ms=timeout_ms), 
+            recovery_fun=lambda e: 
+                handle_file_fetch_failure(page, file_url, e, outputDir, verbose),
+        outputDir=outputDir, 
+        verbose=verbose,
+        max_retries=retries)
         
-    early_resp = resp
+        file_basename = os.path.basename(file_url.split('?')[0])
 
-    file_basename = os.path.basename(file_url.split('?')[0])
-
-    # Process initial attempt: the URL might be a direct PDF download which causes page.goto to "Download is starting"
-    # In that case, try to fetch it directly via the Playwright request API before running verification.
-    if getattr(early_resp, 'status', None) != 200:
-        _log_debug(f"Retry attempts exhausted for {file_url} with status {getattr(early_resp, 'status', 'unknown')}.", outputDir, verbose) 
-        raise RuntimeError(f"Failed to fetch {file_url} after retries.")
-    else:
-        expected_content_types = ['application/pdf', 'video/mp4', 'video/webm', 'video/mpeg']
-        if any(contentType in early_resp.headers.get('content-type') for contentType in expected_content_types):
-            content = early_resp.body()
-            headers = early_resp.headers
-            filename = os.path.basename(file_url.split('?')[0])
-            _log_debug(f"Fetch succeeded for {file_url}: {filename} ({len(content)} bytes)", outputDir, verbose)
-            return {'content': content, 'filename': filename, 'headers': headers}
+        if getattr(resp, 'status', None) != 200 and verification_controls_attempted:
+            _log_debug(f"Retry attempts exhausted for {file_url} with status {getattr(resp, 'status', 'unknown')} after attempting verification controls.", outputDir, verbose) 
+            raise RuntimeError(f"Failed to fetch {file_url} after retries and verification control attempt.")
         else:
-            _log_debug(f"Unexpected content-type for {file_url}: {early_resp.headers.get('content-type')}.", outputDir, verbose)
-            raise RuntimeError(f"Unexpected content-type for {file_url}: {early_resp.headers.get('content-type')}.")
+            expected_content_types = ['application/pdf', 'video/mp4', 'video/webm', 'video/mpeg']
+            if any(contentType in resp.headers.get('content-type') for contentType in expected_content_types):
+                content = resp.body()
+                headers = resp.headers
+                filename = os.path.basename(file_url.split('?')[0])
+                _log_debug(f"Fetch succeeded for {file_url}: {filename} ({len(content)} bytes)", outputDir, verbose)
+                return {'content': content, 'filename': filename, 'headers': headers}
+            elif not verification_controls_attempted:
+                _log_debug(f"Attempting verification controls for {file_url}", outputDir, verbose)
+                click_verification_controls(page, outputDir, file_basename, verbose)
+                click_age_buttons(page, outputDir, file_basename, verbose)
+                verification_controls_attempted = True
+            else:
+                _log_debug(f"Unexpected content-type for {file_url}: {resp.headers.get('content-type')}.", outputDir, verbose)
+                raise RuntimeError(f"Unexpected content-type for {file_url}: {resp.headers.get('content-type')}.")

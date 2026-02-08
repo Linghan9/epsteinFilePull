@@ -1,7 +1,12 @@
 import time
 import os
 import traceback
+from venv import logger
 import requests
+import logging
+from logging.handlers import RotatingFileHandler
+
+logger = None # Global logger instance - initialized via configure_logging
 
 def print_request_details(request):
     """Callback function to process only the main navigation request."""
@@ -16,6 +21,7 @@ def print_request_details(request):
 
 
 def _log_debug(msg: str, outputDir: str, verbose: bool = True, exception: Exception = None):
+    global logger
     if not verbose:
         return
     try:
@@ -23,13 +29,32 @@ def _log_debug(msg: str, outputDir: str, verbose: bool = True, exception: Except
     except Exception:
         pass
     try:
-        with open(os.path.join(outputDir, 'verbose_log.txt'), 'a', encoding='utf-8') as vf:
-            vf.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {msg}\n")
-            if exception is not None:
-                vf.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Exception: {exception}\n{traceback.format_exc()}\n")
-    except Exception:
-        print(f"[ERROR] Failed to write to verbose log: {exception}")
+        if logger is None:
+            logger = configure_logging(outputDir, 'verbose_log.txt')
+        logger.info(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {msg}")
+        if exception is not None:
+            logger.info(f"Exception occurred: {exception}\n{traceback.format_exc()}")
+    except Exception as e:
+        print(f"[ERROR] Failed to write to verbose log: {e}")
         pass
+
+def configure_logging(outputDir: str, log_file_name):
+    # Configure the logger
+    logger = logging.getLogger('my_app')
+    logger.setLevel(logging.INFO)
+
+    # Create a RotatingFileHandler
+    # Rotates the log when it reaches 500 bytes, keeping 2 backups
+    log_handler = RotatingFileHandler(
+        os.path.join(outputDir, log_file_name), 
+        maxBytes=1024*5000, 
+        backupCount=2)
+    log_handler.setLevel(logging.INFO)
+
+    # Add the handler to the logger
+    logger.addHandler(log_handler)
+    return logger
+
 
 def save_snapshot(page, outputDir: str, file_basename: str, event: str, ts: str = None):
     ts = ts or time.strftime("%Y%m%d_%H%M%S")
