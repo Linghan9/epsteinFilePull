@@ -1,5 +1,6 @@
 import time
 import os
+import traceback
 import requests
 
 def print_request_details(request):
@@ -14,7 +15,7 @@ def print_request_details(request):
         print("---------------")
 
 
-def _log_debug(msg: str, outputDir: str, verbose: bool = False):
+def _log_debug(msg: str, outputDir: str, verbose: bool = True, exception: Exception = None):
     if not verbose:
         return
     try:
@@ -24,9 +25,11 @@ def _log_debug(msg: str, outputDir: str, verbose: bool = False):
     try:
         with open(os.path.join(outputDir, 'verbose_log.txt'), 'a', encoding='utf-8') as vf:
             vf.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {msg}\n")
+            if exception is not None:
+                vf.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Exception: {exception}\n{traceback.format_exc()}\n")
     except Exception:
+        print(f"[ERROR] Failed to write to verbose log: {exception}")
         pass
-
 
 def save_snapshot(page, outputDir: str, file_basename: str, event: str, ts: str = None):
     ts = ts or time.strftime("%Y%m%d_%H%M%S")
@@ -34,10 +37,35 @@ def save_snapshot(page, outputDir: str, file_basename: str, event: str, ts: str 
     try:
         with open(snap_path, 'w', encoding='utf-8') as sf:
             sf.write(page.content())
+        _log_debug(f"Saved snapshot for event '{event}' at {snap_path}", outputDir, verbose=True)
     except Exception:
+        _log_debug(f"Failed to save snapshot for event '{event}' at {snap_path}", outputDir, verbose=True)
         pass
     return snap_path
 
+class TryGetRequestException(Exception):
+    def __init__(self, message, response=None):
+        super().__init__(message)
+        self.response = response
+
+
+def _try_get_request(page, url, outputDir, verbose, desc='', timeout_ms: int = 30000):
+    _log_debug(f"Attempting Playwright request for {desc} URL: {url}", outputDir=outputDir, verbose=verbose)
+    result = page.request.get(url, timeout=timeout_ms)
+    if result.status != 200:
+        _log_debug(f"Non-200 response for {desc} URL {url}: {result.status}", outputDir=outputDir, verbose=verbose)
+        raise TryGetRequestException(f"Non-200 response for {desc} URL {url}: {result.status}", response=result)
+    return result
+
+def _append_dead_letter(file_url: str, outputDir: str):
+    try:
+        dl_path = os.path.join(outputDir, 'dead_letter.txt')
+        with open(dl_path, 'a', encoding='utf-8') as dlf:
+            dlf.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {file_url}\n")
+        _log_debug(f"Appended to dead letter: {file_url}", outputDir, verbose=True)
+    except Exception as e:
+        _log_debug(f"Failed to append to dead letter for {file_url}.", outputDir, verbose=True, exception=e)
+        pass
 
 def find_pdf_url(page):
     # Look for common PDF-containing elements
@@ -70,6 +98,7 @@ def find_pdf_url(page):
 
 
 def click_verification_controls(page_obj, outputDir: str, file_basename: str, verbose: bool = False, timeout_ms: int = 10000):
+    _log_debug("Scanning for verification controls to click", outputDir, verbose)
     import re
     pattern = re.compile(r"(?i)\b(i am not a robot|i'm not a robot|not a robot|i am not a bot|i'm not a bot|verify|confirm|continue|agree|accept|proceed|over 18|18\+|age|cookie|submit)\b")
 
@@ -102,7 +131,7 @@ def click_verification_controls(page_obj, outputDir: str, file_basename: str, ve
                 _log_debug(f"Clicked verification control; saved snapshot {snap_path}", outputDir, verbose)
                 return True
             except Exception as e:
-                _log_debug(f"Exception while clicking verification control: {e}", outputDir, verbose)
+                _log_debug(f"Exception while clicking verification control. ", outputDir, verbose, exception=e)
                 return False
         return False
 
@@ -115,7 +144,7 @@ def click_verification_controls(page_obj, outputDir: str, file_basename: str, ve
                 _log_debug("Clicked a control in main frame", outputDir, verbose)
                 return True
     except Exception as e:
-        _log_debug(f"Error scanning main frame for controls: {e}", outputDir, verbose)
+        _log_debug(f"Error scanning main frame for controls.", outputDir, verbose, exception=e)
 
     # Check nested frames
     try:
@@ -130,9 +159,9 @@ def click_verification_controls(page_obj, outputDir: str, file_basename: str, ve
                         _log_debug("Clicked a control in a nested frame", outputDir, verbose)
                         return True
             except Exception as e:
-                _log_debug(f"Error scanning a nested frame: {e}", outputDir, verbose)
+                _log_debug(f"Error scanning a nested frame.", outputDir, verbose, exception=e)
     except Exception as e:
-        _log_debug(f"Error getting frames: {e}", outputDir, verbose)
+        _log_debug(f"Error getting frames.", outputDir, verbose, exception=e)
 
     return False
 
@@ -149,7 +178,7 @@ def click_age_buttons(page_obj, outputDir: str, file_basename: str, verbose: boo
             page_obj.wait_for_load_state('networkidle', timeout=timeout_ms)
             return True
     except Exception as e:
-        _log_debug(f'Exception clicking #age-button-yes: {e}', outputDir, verbose)
+        _log_debug(f'Exception clicking #age-button-yes.', outputDir, verbose, exception=e)
 
     try:
         group = page_obj.query_selector('.age-gate-buttons')
@@ -169,7 +198,7 @@ def click_age_buttons(page_obj, outputDir: str, file_basename: str, verbose: boo
                     page_obj.wait_for_load_state('networkidle', timeout=timeout_ms)
                     return True
     except Exception as e:
-        _log_debug(f'Exception scanning .age-gate-buttons: {e}', outputDir, verbose)
+        _log_debug(f'Exception scanning .age-gate-buttons.', outputDir, verbose, exception=e)
 
     try:
         for f in page_obj.frames:
@@ -186,7 +215,7 @@ def click_age_buttons(page_obj, outputDir: str, file_basename: str, verbose: boo
             except Exception:
                 pass
     except Exception as e:
-        _log_debug(f'Error checking frames for age button: {e}', outputDir, verbose)
+        _log_debug(f'Error checking frames for age button.', outputDir, verbose, exception=e)
 
     return False
 
@@ -276,9 +305,9 @@ def ensure_page_verified(page, outputDir: str, file_basename: str, verbose: bool
                     except Exception:
                         pass
             except Exception as e:
-                _log_debug(f'Exception invoking reauth(): {e}', outputDir, verbose)
+                _log_debug(f'Exception invoking reauth().', outputDir, verbose, exception=e)
         except Exception as e:
-            _log_debug(f'Exception handling robot button/reauth: {e}', outputDir, verbose)
+            _log_debug(f'Exception handling robot button/reauth.', outputDir, verbose, exception=e)
 
         age_clicked = click_age_buttons(page, outputDir, file_basename, verbose, timeout_ms)
         if age_clicked:
