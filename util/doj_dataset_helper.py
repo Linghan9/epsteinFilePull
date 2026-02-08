@@ -107,7 +107,7 @@ def pull_doj_dataset_headed(playwright: Page,
                 # After iterating all items, attempt to navigate to next page link
                 attempted_next_page_verification_controls = False
                 next_page_found = False
-                while not attempted_next_page_verification_controls and not next_page_found:
+                while True:
                     next_page_found = navigate_to_next_page(
                         page=page,
                         page_number=page_number,
@@ -115,12 +115,16 @@ def pull_doj_dataset_headed(playwright: Page,
                         outputDir=output_dir,
                         verbose=verbose,
                     timeout_ms=timeout_ms)
-                
+
+                    if next_page_found:
+                        _log_debug(f"Next page found, navigating to page {page_number + 1} for {path}", output_dir, verbose)
+                        break
+
                     if not next_page_found and not attempted_next_page_verification_controls:
                         _log_debug('No next page found, attempting verification controls before concluding pagination.', output_dir, verbose)
                         click_verification_controls(page, output_dir, file_basename, verbose)
                         attempted_next_page_verification_controls = True
-                    elif not next_page_found and attempted_next_page_verification_controls:
+                    else:
                         _log_debug('No next page found after attempting verification controls, concluding pagination and moving to next dataset.', output_dir, verbose)
                         break
 
