@@ -38,11 +38,10 @@ def main():
 
     # Create 'output' subdirectory and run specific subfolder for files and snapshots
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    base_output = os.path.join(os.getcwd(), 'output')
-    os.makedirs(base_output, exist_ok=True)
-    run_dir = os.path.join(base_output, f"{timestamp}")
+    output_dir = os.path.join(os.getcwd(), 'output')
+    os.makedirs(output_dir, exist_ok=True)
+    run_dir = os.path.join(output_dir, f"{timestamp}")
     os.makedirs(run_dir, exist_ok=True)
-    output_dir = run_dir
     print(f"Run directory: {run_dir}; outputs in: {output_dir}")
 
     # Use dataset-level helper to crawl pages and download files
@@ -52,7 +51,7 @@ def main():
             playwright=playwright,
             datasets=datasets, 
             base_url=base_url,
-            output_dir=output_dir, 
+            run_dir=run_dir, 
             per_page_limit=per_page_limit, 
             timeout_ms=30000, 
             verbose=verbose, 
