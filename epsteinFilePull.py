@@ -28,11 +28,7 @@ def main():
         datasets = args.datasets
     else:
         datasets = [
-            "data-set-8-files",
-            "data-set-9-files",
-            "data-set-10-files",
-            "data-set-11-files",
-            "data-set-12-files"
+            "data-set-8-files"
         ]
     print(f"Datasets to process: {datasets}")
 
