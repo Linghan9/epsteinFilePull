@@ -53,8 +53,7 @@ def pull_doj_file(page: Page,
             _log_debug(f"Retry attempts exhausted for {file_url} with status {getattr(resp, 'status', 'unknown')} after attempting verification controls.", run_dir=run_dir, verbose=verbose) 
             raise RuntimeError(f"Failed to fetch {file_url} after retries and verification control attempt.")
         else:
-            expected_content_types = ['application/pdf', 'video/mp4', 'video/webm', 'video/mpeg', 'm4a', 'wav']
-            if any(contentType in resp.headers.get('content-type') for contentType in expected_content_types):
+            if "text/html" not in resp.headers.get('content-type'):
                 content = resp.body()
                 headers = resp.headers
                 filename = os.path.basename(file_url.split('?')[0])
