@@ -135,13 +135,16 @@ def pull_doj_dataset_headed(playwright: Page,
                         _log_debug(f"Next page found, navigating to page {page_number + 1} for {path}", run_dir=run_dir, verbose=verbose)
                         break
 
-                    if not next_page_found and not attempted_next_page_verification_controls:
-                        _log_debug('No next page found, attempting verification controls before concluding pagination.', run_dir=run_dir, verbose=verbose)
-                        click_verification_controls(page, run_dir=run_dir, file_basename=file_basename, verbose=verbose)
-                        attempted_next_page_verification_controls = True
-                    else:
-                        _log_debug('No next page found after attempting verification controls, concluding pagination and moving to next dataset.', run_dir=run_dir, verbose=verbose)
-                        break
+                    # if not next_page_found and not attempted_next_page_verification_controls:
+                    #     _log_debug('No next page found, attempting verification controls before concluding pagination.', run_dir=run_dir, verbose=verbose)
+                    #     click_verification_controls(page, run_dir=run_dir, file_basename=file_basename, verbose=verbose)
+                    #     attempted_next_page_verification_controls = True
+                    # else:
+                    _log_debug('No next page found after attempting verification controls, attempting to increment the page in the url instead.', run_dir=run_dir, verbose=verbose)
+                    direct_page_url = ds_url + '?page=' + str(page_number + 1)
+                    _log_debug(f"Attempting direct URL navigation to next page: {direct_page_url}", run_dir=run_dir, verbose=verbose)
+                    page.goto(direct_page_url, timeout=30000)
+                    break
 
         except Exception as e:
             _log_debug(f"Error processing dataset {ds_url}. Moving to next dataset.", run_dir=run_dir, exception=e, verbose=verbose)
